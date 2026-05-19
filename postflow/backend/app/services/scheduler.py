@@ -3,7 +3,6 @@ from datetime import datetime, timezone
 from app.database import SessionLocal
 from app.models import Post
 from app.services.instagram import InstagramPoster
-from app.core.security import decrypt
 
 scheduler = BackgroundScheduler()
 
@@ -18,13 +17,12 @@ def check_and_publish():
         ).all()
 
         for post in pending:
-            account = post.instagram_account
             try:
                 poster = InstagramPoster(
-                    username=account.username,
-                    password=decrypt(account.password_encrypted),
+                    username=post.instagram_username,
+                    password=post.instagram_password,
                 )
-                success = poster.post(image_path=post.image_url, caption=post.caption)
+                success = poster.post(image_path=post.image_path, caption=post.caption)
             except Exception as e:
                 success = False
                 post.error_message = str(e)
