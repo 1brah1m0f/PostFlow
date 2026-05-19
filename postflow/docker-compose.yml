@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: postflow_db
+    environment:
+      POSTGRES_USER: postflow
+      POSTGRES_PASSWORD: postflow
+      POSTGRES_DB: postflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
