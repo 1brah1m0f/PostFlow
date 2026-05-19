@@ -8,6 +8,7 @@ Instagram post scheduler for small businesses.
 - Automation: Playwright (Chromium)
 - DB: PostgreSQL (Docker)
 
+
 ## Setup
 
 ### 1. PostgreSQL
