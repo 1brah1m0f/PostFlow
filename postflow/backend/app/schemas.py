@@ -1,59 +1,12 @@
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
-from pydantic import BaseModel, EmailStr
-
-
-class UserCreate(BaseModel):
-    email: EmailStr
-    password: str
-
-
-class UserOut(BaseModel):
-    id: UUID
-    email: str
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class Token(BaseModel):
-    access_token: str
-    token_type: str = "bearer"
-
-
-class AccountCreate(BaseModel):
-    username: str
-    password: str
-
-
-class AccountOut(BaseModel):
-    id: UUID
-    username: str
-    is_active: bool
-    created_at: datetime
-
-    model_config = {"from_attributes": True}
-
-
-class PostCreate(BaseModel):
-    account_id: UUID
-    caption: str
-    image_url: Optional[str] = None
-    scheduled_at: datetime
-
-
-class PostUpdate(BaseModel):
-    caption: Optional[str] = None
-    image_url: Optional[str] = None
-    scheduled_at: Optional[datetime] = None
+from pydantic import BaseModel
 
 
 class PostOut(BaseModel):
-    id: UUID
-    account_id: UUID
+    id: int
     caption: str
-    image_url: Optional[str]
+    image_path: str
     scheduled_at: datetime
     status: str
     error_message: Optional[str]
