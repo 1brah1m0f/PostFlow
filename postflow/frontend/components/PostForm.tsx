@@ -1,8 +1,9 @@
 "use client";
 
-import { createPost } from "@/lib/api";
+import { createPost, getAccounts } from "@/lib/api";
+import { Account, Platform } from "@/types";
 import { useRouter } from "next/navigation";
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useEffect } from "react";
 import {
   Upload,
   ImageIcon,
@@ -11,10 +12,18 @@ import {
   Clock,
   Type,
   Instagram,
-  Lock,
   Loader2,
-  Sparkles,
+  Video,
+  ChevronDown,
+  AlertTriangle,
 } from "lucide-react";
+import Link from "next/link";
+
+const TikTokIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.18 8.18 0 0 0 4.78 1.52V6.75a4.84 4.84 0 0 1-1.01-.06z" />
+  </svg>
+);
 
 export function PostForm() {
   const router = useRouter();
@@ -22,84 +31,107 @@ export function PostForm() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [dragOver, setDragOver] = useState(false);
+  const [platform, setPlatform] = useState<Platform>("instagram");
 
-  // Form fields
   const [caption, setCaption] = useState("");
-  const [image, setImage] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [media, setMedia] = useState<File | null>(null);
+  const [mediaPreview, setMediaPreview] = useState<string | null>(null);
   const [scheduleDate, setScheduleDate] = useState("");
   const [scheduleTime, setScheduleTime] = useState("");
-  const [username, setUsername] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("ig_username") || "";
-    }
-    return "";
-  });
-  const [password, setPassword] = useState(() => {
-    if (typeof window !== "undefined") {
-      return localStorage.getItem("ig_password") || "";
-    }
-    return "";
-  });
 
-  const handleImageSelect = useCallback((file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setError("Please upload an image file (JPG, PNG)");
-      return;
-    }
-    setImage(file);
-    setError("");
-    const reader = new FileReader();
-    reader.onload = (e) => setImagePreview(e.target?.result as string);
-    reader.readAsDataURL(file);
+  const [accounts, setAccounts] = useState<Account[]>([]);
+  const [accountsLoading, setAccountsLoading] = useState(true);
+  const [accountId, setAccountId] = useState<string | null>(null);
+
+  useEffect(() => {
+    getAccounts()
+      .then((all) => {
+        setAccounts(all);
+        // Auto-select first account for current platform if available
+        const first = all.find((a) => a.platform === platform);
+        if (first) setAccountId(String(first.id));
+      })
+      .catch(console.error)
+      .finally(() => setAccountsLoading(false));
   }, []);
+
+  // Reset account selection when platform changes
+  useEffect(() => {
+    const first = accounts.find((a) => a.platform === platform);
+    setAccountId(first ? String(first.id) : null);
+  }, [platform, accounts]);
+
+  const platformAccounts = accounts.filter((a) => a.platform === platform);
+
+  const acceptedTypes =
+    platform === "tiktok"
+      ? "video/mp4,video/quicktime,video/webm"
+      : "image/jpeg,image/png,image/jpg,image/webp";
+
+  const handleMediaSelect = useCallback(
+    (file: File) => {
+      const isVideo = file.type.startsWith("video/");
+      const isImage = file.type.startsWith("image/");
+      if (platform === "tiktok" && !isVideo) {
+        setError("TikTok requires a video file (MP4, MOV, WEBM)");
+        return;
+      }
+      if (platform === "instagram" && !isImage) {
+        setError("Instagram requires an image file (JPG, PNG, WEBP)");
+        return;
+      }
+      setMedia(file);
+      setError("");
+      const reader = new FileReader();
+      reader.onload = (e) => setMediaPreview(e.target?.result as string);
+      reader.readAsDataURL(file);
+    },
+    [platform]
+  );
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setDragOver(false);
       const file = e.dataTransfer.files[0];
-      if (file) handleImageSelect(file);
+      if (file) handleMediaSelect(file);
     },
-    [handleImageSelect]
+    [handleMediaSelect]
   );
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) handleImageSelect(file);
+    if (file) handleMediaSelect(file);
   };
 
-  const removeImage = () => {
-    setImage(null);
-    setImagePreview(null);
+  const removeMedia = () => {
+    setMedia(null);
+    setMediaPreview(null);
     if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handlePlatformChange = (p: Platform) => {
+    setPlatform(p);
+    removeMedia();
+    setError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    // Validation
     if (!caption.trim()) return setError("Caption is required");
-    if (!image) return setError("Image is required");
+    if (!media) return setError("Media file is required");
     if (!scheduleDate) return setError("Schedule date is required");
     if (!scheduleTime) return setError("Schedule time is required");
-    if (!username.trim()) return setError("Instagram username is required");
-    if (!password.trim()) return setError("Instagram password is required");
+    if (!accountId) return setError(`No ${platform} account selected. Add one in Settings.`);
 
     setIsSubmitting(true);
-
     try {
-      // Save credentials to localStorage
-      localStorage.setItem("ig_username", username);
-      localStorage.setItem("ig_password", password);
-
-      // Build FormData
       const formData = new FormData();
-      formData.append("instagram_username", username);
-      formData.append("instagram_password", password);
+      formData.append("account_id", String(accountId));
       formData.append("caption", caption);
-      formData.append("image", image);
+      formData.append("media", media);
       formData.append("scheduled_at", `${scheduleDate}T${scheduleTime}:00`);
 
       await createPost(formData);
@@ -111,257 +143,225 @@ export function PostForm() {
     }
   };
 
+  const isVideo = media?.type.startsWith("video/");
+
   return (
-    <form onSubmit={handleSubmit} className="max-w-2xl mx-auto space-y-6 animate-fade-in">
-      <div>
+    <div className="max-w-2xl animate-fade-in">
+      <div className="mb-7">
         <h1 className="text-2xl font-bold text-brand-dark">Create New Post</h1>
-        <p className="text-brand-gray mt-1">Schedule your next Instagram post.</p>
+        <p className="text-sm text-brand-gray mt-0.5">Schedule your next social media post.</p>
       </div>
 
-      {/* Error Banner */}
       {error && (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-brand-rust text-sm flex items-center gap-2 animate-slide-up">
+        <div className="mb-5 p-3.5 rounded-xl bg-red-50 border border-red-100 text-brand-rust text-sm flex items-center gap-2">
           <X className="w-4 h-4 flex-shrink-0" />
           {error}
         </div>
       )}
 
-      {/* Image Upload */}
-      <div className="glass-card p-6">
-        <label className="flex items-center gap-2 text-sm font-semibold text-brand-dark mb-3">
-          <ImageIcon className="w-4 h-4 text-brand-rust" />
-          Post Image
-        </label>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {/* Post Details */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-5">
+          <h2 className="text-sm font-semibold text-brand-dark">Post Details</h2>
 
-        {imagePreview ? (
-          <div className="relative rounded-xl overflow-hidden border border-brand-cream group">
-            <img
-              src={imagePreview}
-              alt="Preview"
-              className="w-full max-h-80 object-cover"
+          <div>
+            <label htmlFor="caption-input" className="flex items-center gap-1.5 text-xs font-medium text-brand-gray mb-1.5">
+              <Type className="w-3.5 h-3.5" />
+              Caption *
+            </label>
+            <textarea
+              id="caption-input"
+              value={caption}
+              onChange={(e) => setCaption(e.target.value)}
+              placeholder="Write your post caption here..."
+              rows={4}
+              maxLength={2200}
+              className="input-base resize-none"
             />
-            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
-            <button
-              type="button"
-              onClick={removeImage}
-              className="absolute top-3 right-3 p-2 rounded-lg bg-white/90 backdrop-blur-sm
-                         text-brand-dark hover:text-brand-rust hover:bg-red-50
-                         transition-all duration-200 shadow-sm
-                         opacity-0 group-hover:opacity-100"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragOver(true);
-            }}
-            onDragLeave={() => setDragOver(false)}
-            onDrop={handleDrop}
-            onClick={() => fileInputRef.current?.click()}
-            className={`
-              relative border-2 border-dashed rounded-xl p-12
-              flex flex-col items-center justify-center gap-3
-              cursor-pointer transition-all duration-300
-              ${
-                dragOver
-                  ? "border-brand-peach bg-brand-peach/10"
-                  : "border-brand-cream hover:border-brand-peach hover:bg-brand-cream/30"
-              }
-            `}
-          >
-            <div
-              className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-colors duration-300 ${
-                dragOver
-                  ? "bg-brand-peach text-brand-dark"
-                  : "bg-brand-cream text-brand-gray"
-              }`}
-            >
-              <Upload className="w-6 h-6" />
+            <div className="flex justify-end mt-1">
+              <span className={`text-xs ${caption.length > 2000 ? "text-brand-rust" : "text-brand-gray/60"}`}>
+                {caption.length}/2200
+              </span>
             </div>
-            <div className="text-center">
-              <p className="text-sm font-medium text-brand-dark">
-                Drag & drop your image here
+          </div>
+
+          <div>
+            <label className="flex items-center gap-1.5 text-xs font-medium text-brand-gray mb-1.5">
+              {platform === "tiktok" ? <Video className="w-3.5 h-3.5" /> : <ImageIcon className="w-3.5 h-3.5" />}
+              {platform === "tiktok" ? "Video" : "Image"} *
+            </label>
+
+            {mediaPreview ? (
+              <div className="relative rounded-xl overflow-hidden border border-gray-100 group">
+                {isVideo ? (
+                  <video src={mediaPreview} className="w-full max-h-64 object-cover" controls />
+                ) : (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={mediaPreview} alt="Preview" className="w-full max-h-64 object-cover" />
+                )}
+                <button
+                  type="button"
+                  onClick={removeMedia}
+                  className="absolute top-2 right-2 p-1.5 rounded-lg bg-white/90 text-brand-dark hover:text-brand-rust shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <div
+                onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                onDragLeave={() => setDragOver(false)}
+                onDrop={handleDrop}
+                onClick={() => fileInputRef.current?.click()}
+                className={`border-2 border-dashed rounded-xl p-10 flex flex-col items-center justify-center gap-2.5 cursor-pointer transition-all duration-200 ${
+                  dragOver
+                    ? "border-brand-peach bg-brand-peach/10"
+                    : "border-gray-200 hover:border-brand-peach hover:bg-gray-50"
+                }`}
+              >
+                <div className="w-12 h-12 rounded-xl bg-gray-100 flex items-center justify-center">
+                  <Upload className="w-5 h-5 text-brand-gray" />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-medium text-brand-dark">Click to select or drag & drop</p>
+                  <p className="text-xs text-brand-gray mt-0.5">
+                    {platform === "tiktok" ? "MP4, MOV, WEBM · max 50 MB" : "JPG, PNG, WEBP · max 50 MB"}
+                  </p>
+                </div>
+              </div>
+            )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept={acceptedTypes}
+              onChange={handleFileChange}
+              className="hidden"
+            />
+          </div>
+        </div>
+
+        {/* Schedule */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-brand-dark flex items-center gap-1.5">
+            <Calendar className="w-4 h-4 text-brand-rust" />
+            Schedule
+          </h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="schedule-date" className="block text-xs font-medium text-brand-gray mb-1.5">Date</label>
+              <div className="relative">
+                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray pointer-events-none" />
+                <input
+                  type="date"
+                  id="schedule-date"
+                  value={scheduleDate}
+                  onChange={(e) => setScheduleDate(e.target.value)}
+                  className="input-base pl-10"
+                />
+              </div>
+            </div>
+            <div>
+              <label htmlFor="schedule-time" className="block text-xs font-medium text-brand-gray mb-1.5">Time</label>
+              <div className="relative">
+                <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray pointer-events-none" />
+                <input
+                  type="time"
+                  id="schedule-time"
+                  value={scheduleTime}
+                  onChange={(e) => setScheduleTime(e.target.value)}
+                  className="input-base pl-10"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Platform & Account */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
+          <h2 className="text-sm font-semibold text-brand-dark">Platform & Account</h2>
+
+          <div className="grid grid-cols-2 gap-2">
+            {(["instagram", "tiktok"] as Platform[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => handlePlatformChange(p)}
+                className={`flex items-center justify-center gap-2 py-2.5 rounded-xl border-2 text-sm font-semibold transition-all duration-200 ${
+                  platform === p
+                    ? "border-brand-rust bg-brand-rust/5 text-brand-rust"
+                    : "border-gray-100 text-brand-gray hover:border-brand-peach hover:text-brand-dark"
+                }`}
+              >
+                {p === "instagram" ? <Instagram className="w-4 h-4" /> : <TikTokIcon />}
+                {p === "instagram" ? "Instagram" : "TikTok"}
+              </button>
+            ))}
+          </div>
+
+          {accountsLoading ? (
+            <div className="flex items-center gap-2 text-sm text-brand-gray">
+              <Loader2 className="w-4 h-4 animate-spin" /> Loading accounts...
+            </div>
+          ) : platformAccounts.length === 0 ? (
+            <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-brand-cream/30 border border-brand-cream">
+              <AlertTriangle className="w-4 h-4 text-brand-rust flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-brand-dark">
+                No {platform} accounts saved.{" "}
+                <Link href="/dashboard/settings" className="text-brand-rust font-semibold hover:underline">
+                  Add one in Settings
+                </Link>
+                .
               </p>
-              <p className="text-xs text-brand-gray mt-1">
-                or click to browse · JPG, PNG
-              </p>
             </div>
-          </div>
-        )}
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/jpg"
-          onChange={handleFileChange}
-          className="hidden"
-          id="image-upload"
-        />
-      </div>
-
-      {/* Caption */}
-      <div className="glass-card p-6">
-        <label
-          htmlFor="caption-input"
-          className="flex items-center gap-2 text-sm font-semibold text-brand-dark mb-3"
-        >
-          <Type className="w-4 h-4 text-brand-rust" />
-          Caption
-        </label>
-        <div className="relative">
-          <textarea
-            id="caption-input"
-            value={caption}
-            onChange={(e) => setCaption(e.target.value)}
-            placeholder="Write a captivating caption for your post..."
-            rows={4}
-            maxLength={2200}
-            className="input-base resize-none min-h-[120px]"
-          />
-          <div className="flex items-center justify-between mt-2">
-            <div className="flex items-center gap-1.5 text-xs text-brand-gray">
-              <Sparkles className="w-3 h-3" />
-              <span>Make it engaging</span>
-            </div>
-            <span
-              className={`text-xs font-medium ${
-                caption.length > 2000 ? "text-brand-rust" : "text-brand-gray"
-              }`}
-            >
-              {caption.length}/2,200
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Schedule */}
-      <div className="glass-card p-6">
-        <label className="flex items-center gap-2 text-sm font-semibold text-brand-dark mb-3">
-          <Calendar className="w-4 h-4 text-brand-rust" />
-          Schedule
-        </label>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="schedule-date"
-              className="block text-xs font-medium text-brand-gray mb-1.5"
-            >
-              Date
-            </label>
-            <div className="relative">
-              <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray pointer-events-none" />
-              <input
-                type="date"
-                id="schedule-date"
-                value={scheduleDate}
-                onChange={(e) => setScheduleDate(e.target.value)}
-                className="input-base pl-10"
-              />
-            </div>
-          </div>
-          <div>
-            <label
-              htmlFor="schedule-time"
-              className="block text-xs font-medium text-brand-gray mb-1.5"
-            >
-              Time
-            </label>
-            <div className="relative">
-              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray pointer-events-none" />
-              <input
-                type="time"
-                id="schedule-time"
-                value={scheduleTime}
-                onChange={(e) => setScheduleTime(e.target.value)}
-                className="input-base pl-10"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Instagram Credentials */}
-      <div className="glass-card p-6">
-        <label className="flex items-center gap-2 text-sm font-semibold text-brand-dark mb-1">
-          <Instagram className="w-4 h-4 text-brand-rust" />
-          Instagram Account
-        </label>
-        <p className="text-xs text-brand-gray mb-4">
-          Credentials are stored locally in your browser
-        </p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label
-              htmlFor="ig-username"
-              className="block text-xs font-medium text-brand-gray mb-1.5"
-            >
-              Username
-            </label>
-            <div className="relative">
-              <Instagram className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray pointer-events-none" />
-              <input
-                type="text"
-                id="ig-username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="your_username"
-                className="input-base pl-10"
-              />
-            </div>
-          </div>
-          <div>
-            <label
-              htmlFor="ig-password"
-              className="block text-xs font-medium text-brand-gray mb-1.5"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray pointer-events-none" />
-              <input
-                type="password"
-                id="ig-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••••"
-                className="input-base pl-10"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Submit */}
-      <div className="flex items-center justify-end gap-3 pt-2">
-        <button
-          type="button"
-          onClick={() => router.push("/dashboard")}
-          className="btn-secondary"
-          id="cancel-post"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="btn-primary"
-          id="submit-post"
-        >
-          {isSubmitting ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Scheduling...
-            </>
           ) : (
-            <>
-              <Calendar className="w-4 h-4" />
-              Schedule Post
-            </>
+            <div>
+              <label className="block text-xs font-medium text-brand-gray mb-1.5">Account</label>
+              <div className="relative">
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-brand-gray pointer-events-none" />
+                <select
+                  value={accountId ?? ""}
+                  onChange={(e) => setAccountId(e.target.value)}
+                  className="input-base pr-10 appearance-none cursor-pointer"
+                >
+                  {platformAccounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      @{a.username}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
           )}
-        </button>
-      </div>
-    </form>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center justify-end gap-3 pt-1">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard")}
+            className="btn-secondary"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            disabled={isSubmitting || platformAccounts.length === 0}
+            className="btn-primary"
+          >
+            {isSubmitting ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Scheduling...
+              </>
+            ) : (
+              <>
+                <Calendar className="w-4 h-4" />
+                Schedule Post
+              </>
+            )}
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

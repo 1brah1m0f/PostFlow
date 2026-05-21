@@ -1,7 +1,20 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pip install *)"
+      "Bash(pip install *)",
+      "Bash(Remove-Item *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\sixii\\\\OneDrive\\\\Desktop\\\\PostFlow\" -Recurse -Force)",
+      "Bash(Select-Object FullName)",
+      "Bash(Sort-Object FullName)",
+      "Bash(del *)",
+      "Bash(venv/Scripts/pip install *)",
+      "Bash(venv/Scripts/python -c \"from cryptography.fernet import Fernet; print\\(Fernet.generate_key\\(\\).decode\\(\\)\\)\")",
+      "Bash(venv/Scripts/python -c \"from app.main import app; print\\('Backend imports OK'\\)\")",
+      "Bash(venv/Scripts/python -c \"from worker import main; print\\('Worker imports OK'\\)\")",
+      "Bash(venv/Scripts/python -c ' *)",
+      "Bash(venv/Scripts/alembic current *)",
+      "Bash(venv/Scripts/alembic stamp *)",
+      "Bash(npm uninstall *)"
     ]
   }
 }

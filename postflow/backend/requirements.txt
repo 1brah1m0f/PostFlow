@@ -1,9 +1,8 @@
 fastapi>=0.110.0
 uvicorn>=0.27.0
-sqlalchemy>=2.0
-greenlet>=3.2.0
 playwright>=1.42.0
-apscheduler>=3.10.4
 python-multipart>=0.0.9
 pydantic-settings>=2.2.0
-aiofiles>=23.2.1
+cryptography>=42.0.0
+slowapi>=0.1.9
+supabase==2.13.0

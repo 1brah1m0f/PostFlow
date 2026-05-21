@@ -1,18 +1,14 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import { Navbar } from "@/components/Navbar";
+import { Providers } from "./providers";
 
 export const metadata: Metadata = {
-  title: "PostFlow — Instagram Post Scheduler",
+  title: "PostFlow — Social Media Scheduler",
   description:
-    "Schedule and auto-publish your Instagram posts with PostFlow. Plan your content calendar, upload images, write captions, and let automation handle the rest.",
+    "Schedule and auto-publish your Instagram and TikTok posts with PostFlow.",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
@@ -23,11 +19,8 @@ export default function RootLayout({
           crossOrigin="anonymous"
         />
       </head>
-      <body className="min-h-screen">
-        <div className="min-h-screen flex flex-col">
-          <Navbar />
-          <main className="flex-1 max-w-6xl w-full mx-auto p-4 md:p-8">{children}</main>
-        </div>
+      <body className="min-h-screen bg-[#F5F5F0]">
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

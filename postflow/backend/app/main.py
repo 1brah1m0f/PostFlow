@@ -1,92 +1,69 @@
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
-from fastapi.staticfiles import StaticFiles
-from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from datetime import datetime
-import shutil
-import uuid
+import logging
 import os
+from contextlib import asynccontextmanager
 
-from app.database import Base, engine, SessionLocal
-from app.models import Post
-from app.services.scheduler import start_scheduler
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+from slowapi import _rate_limit_exceeded_handler
+from slowapi.errors import RateLimitExceeded
+
 from app.core.config import settings
+from app.core.limiter import limiter
+from app.routers.accounts import router as accounts_router
+from app.routers.posts import router as posts_router
+
+logging.basicConfig(
+    level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s",
+)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    Base.metadata.create_all(bind=engine)
-    os.makedirs(settings.UPLOADS_DIR, exist_ok=True)
-    start_scheduler()
+    logger.info("PostFlow API started environment=%s", settings.ENVIRONMENT)
     yield
+    logger.info("PostFlow API shutting down")
 
 
 app = FastAPI(title="PostFlow API", lifespan=lifespan)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=settings.cors_origins_list,
     allow_methods=["*"],
     allow_headers=["*"],
+    allow_credentials=True,
 )
 
-app.mount("/uploads", StaticFiles(directory=settings.UPLOADS_DIR), name="uploads")
+
+@app.middleware("http")
+async def security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    if settings.ENVIRONMENT == "production":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
 
 
-@app.post("/posts")
-async def create_post(
-    instagram_username: str = Form(...),
-    instagram_password: str = Form(...),
-    caption: str = Form(...),
-    scheduled_at: str = Form(...),
-    image: UploadFile = File(...),
-):
-    ext = image.filename.rsplit(".", 1)[-1] if "." in image.filename else "jpg"
-    filename = f"{uuid.uuid4()}.{ext}"
-    filepath = os.path.join(settings.UPLOADS_DIR, filename)
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(image.file, f)
-
-    db = SessionLocal()
-    try:
-        post = Post(
-            instagram_username=instagram_username,
-            instagram_password=instagram_password,
-            caption=caption,
-            image_path=filepath,
-            scheduled_at=datetime.fromisoformat(scheduled_at),
-        )
-        db.add(post)
-        db.commit()
-        db.refresh(post)
-        return post
-    finally:
-        db.close()
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    logger.exception("unhandled_exception method=%s path=%s", request.method, request.url.path)
+    origin = request.headers.get("origin", settings.cors_origins_list[0] if settings.cors_origins_list else "*")
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+        headers={"Access-Control-Allow-Origin": origin},
+    )
 
 
-@app.get("/posts")
-def get_posts():
-    db = SessionLocal()
-    try:
-        return db.query(Post).order_by(Post.scheduled_at.desc()).all()
-    finally:
-        db.close()
-
-
-@app.delete("/posts/{post_id}")
-def delete_post(post_id: int):
-    db = SessionLocal()
-    try:
-        post = db.query(Post).filter(Post.id == post_id).first()
-        if not post:
-            raise HTTPException(status_code=404, detail="Post not found")
-        if post.status != "scheduled":
-            raise HTTPException(status_code=400, detail="Only scheduled posts can be deleted")
-        db.delete(post)
-        db.commit()
-        return {"ok": True}
-    finally:
-        db.close()
+app.include_router(accounts_router)
+app.include_router(posts_router)
 
 
 @app.get("/health")

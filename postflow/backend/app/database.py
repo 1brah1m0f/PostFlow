@@ -1,20 +1,2 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, DeclarativeBase
-
-engine = create_engine(
-    "sqlite:///./postflow.db",
-    connect_args={"check_same_thread": False},
-)
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-
-class Base(DeclarativeBase):
-    pass
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+# SQLAlchemy database layer removed — replaced by Supabase client.
+# See app/core/supabase_client.py for get_admin_client() and get_anon_client().
