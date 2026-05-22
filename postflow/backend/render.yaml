@@ -19,3 +19,5 @@ services:
         sync: false
       - key: UPLOADS_DIR
         value: ./uploads
+      - key: PYTHON_VERSION
+        value: "3.12.0"
