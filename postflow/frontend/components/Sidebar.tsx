@@ -22,13 +22,6 @@ export function Sidebar() {
 
   return (
     <aside className="w-20 bg-pf-white/60 backdrop-blur-md rounded-[2.5rem] py-8 flex flex-col items-center shadow-soft border border-pf-brown/5 sticky top-8 h-[calc(100vh-4rem)]">
-      {/* Profile Pic Placeholder */}
-      <div className="mb-12">
-        <div className="w-12 h-12 rounded-full overflow-hidden border-2 border-pf-green/20">
-          <img src="https://images.unsplash.com/photo-1542601906990-b4d3fb778b09?w=150&h=150&fit=crop" alt="Profile" className="w-full h-full object-cover" />
-        </div>
-      </div>
-      
       <nav className="flex flex-col gap-8 items-center w-full flex-1">
         {navItems.map((item) => {
           const isActive = item.path === '/dashboard' 
