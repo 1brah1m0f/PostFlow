@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID, uuid4
 from datetime import datetime, timezone
 from collections import defaultdict
-import shutil, os
+import shutil, os, httpx
 from app.database import get_db
 from app.models import Post
 from app.schemas import PostCreate, PostUpdate, PostOut
@@ -14,16 +14,40 @@ router = APIRouter(prefix="/posts", tags=["posts"])
 
 ALLOWED_TYPES = {"image/jpeg", "image/png", "image/jpg", "video/mp4"}
 
+
+def _upload_to_supabase(data: bytes, filename: str, content_type: str) -> str:
+    """Upload bytes to Supabase Storage and return the public URL."""
+    url = f"{settings.SUPABASE_URL}/storage/v1/object/postflow-uploads/{filename}"
+    headers = {
+        "Authorization": f"Bearer {settings.SUPABASE_SERVICE_KEY}",
+        "Content-Type": content_type,
+        "x-upsert": "true",
+    }
+    r = httpx.put(url, content=data, headers=headers, timeout=30)
+    if r.status_code not in (200, 201):
+        raise HTTPException(500, f"Storage upload failed: {r.text}")
+    return f"{settings.SUPABASE_URL}/storage/v1/object/public/postflow-uploads/{filename}"
+
+
 @router.post("/upload")
 def upload_media(file: UploadFile = File(...), user_id: UUID = Depends(get_current_user_id)):
     if file.content_type not in ALLOWED_TYPES:
         raise HTTPException(400, "Unsupported file type. Use JPG, PNG or MP4.")
     ext = file.filename.rsplit(".", 1)[-1] if file.filename and "." in file.filename else "bin"
     filename = f"{uuid4()}.{ext}"
-    dest = os.path.join(settings.UPLOADS_DIR, filename)
-    with open(dest, "wb") as f:
-        shutil.copyfileobj(file.file, f)
-    return {"url": f"http://localhost:8000/uploads/{filename}"}
+    data = file.file.read()
+
+    if settings.SUPABASE_URL and settings.SUPABASE_SERVICE_KEY:
+        url = _upload_to_supabase(data, filename, file.content_type or "application/octet-stream")
+    else:
+        # fallback: local disk (dev only)
+        os.makedirs(settings.UPLOADS_DIR, exist_ok=True)
+        dest = os.path.join(settings.UPLOADS_DIR, filename)
+        with open(dest, "wb") as f:
+            f.write(data)
+        url = f"{settings.BASE_URL}/uploads/{filename}"
+
+    return {"url": url}
 
 
 @router.get("", response_model=list[PostOut])

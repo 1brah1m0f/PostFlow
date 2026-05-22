@@ -1,27 +1,23 @@
 from apscheduler.schedulers.background import BackgroundScheduler
 from datetime import datetime, timezone
-import os
+import os, tempfile, httpx
 from app.database import SessionLocal
 from app.models import Post
 from app.services.instagram import InstagramPoster
 from app.core.security import decrypt
-from app.core.config import settings
 
 scheduler = BackgroundScheduler()
 
 
-def _url_to_local_path(image_url: str | None) -> str | None:
-    """Convert https://backend.onrender.com/uploads/file.jpg → absolute local path."""
-    if not image_url:
-        return None
-    if "/uploads/" in image_url:
-        filename = image_url.split("/uploads/")[-1]
-        path = os.path.abspath(os.path.join(settings.UPLOADS_DIR, filename))
-        return path if os.path.exists(path) else None
-    # Already a local path
-    if os.path.exists(image_url):
-        return image_url
-    return None
+def _download_image(image_url: str) -> str:
+    """Download image from any URL to a temp file. Returns local path."""
+    r = httpx.get(image_url, follow_redirects=True, timeout=30)
+    r.raise_for_status()
+    ext = image_url.split(".")[-1].split("?")[0][:4] or "jpg"
+    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}")
+    tmp.write(r.content)
+    tmp.close()
+    return tmp.name
 
 
 def check_and_publish():
@@ -39,23 +35,26 @@ def check_and_publish():
             account = post.instagram_account
             error_message = None
             success = False
+            tmp_path = None
 
             try:
-                local_image = _url_to_local_path(post.image_url)
-                print(f"[Scheduler] Post {str(post.id)[:8]}... image_url={post.image_url} → local={local_image}")
-
-                if not local_image:
-                    error_message = "Image file not found on disk. Re-upload the image and reschedule."
+                if not post.image_url:
+                    error_message = "No image attached. Re-upload the image and reschedule."
                 else:
+                    print(f"[Scheduler] Downloading image: {post.image_url}")
+                    tmp_path = _download_image(post.image_url)
                     poster = InstagramPoster(
                         username=account.username,
                         password=decrypt(account.password_encrypted),
                     )
-                    poster.post(image_path=local_image, caption=post.caption)
+                    poster.post(image_path=tmp_path, caption=post.caption)
                     success = True
 
             except Exception as e:
                 error_message = str(e) or "Instagram automation failed — check uvicorn logs for details"
+            finally:
+                if tmp_path and os.path.exists(tmp_path):
+                    os.unlink(tmp_path)
 
             if success:
                 post.status = "published"

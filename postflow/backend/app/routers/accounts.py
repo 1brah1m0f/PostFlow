@@ -69,7 +69,7 @@ def _download_to_local(cdn_url: str, username: str) -> str | None:
             dest = os.path.join(settings.UPLOADS_DIR, filename)
             with open(dest, "wb") as f:
                 f.write(r.content)
-            return f"http://localhost:8000/uploads/{filename}"
+            return f"{settings.BASE_URL}/uploads/{filename}"
     except Exception:
         return None
 
