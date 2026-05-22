@@ -1,54 +1,20 @@
 # PostFlow
 
-Instagram post scheduler for small businesses.
+A social media scheduling app that lets users connect their Instagram accounts, upload media, write captions (with AI generation), and schedule posts to be automatically published at a chosen time.
 
-## Stack
-- Frontend: Next.js 14 + Tailwind
-- Backend: FastAPI + SQLAlchemy + APScheduler
-- Automation: Playwright (Chromium)
-- DB: PostgreSQL (Docker)
+## Tech Stack
 
+**Frontend:** Next.js 14, TypeScript, Tailwind CSS, Axios, Render
 
-## Setup
+**Backend:** FastAPI, APScheduler, Instagrapi, SQLAlchemy, Passlib, python-jose, Fernet, Pillow, Render
 
-### 1. PostgreSQL
-```bash
-docker-compose up -d
-```
+**Database & Storage:** Supabase PostgreSQL, Supabase Storage
 
-### 2. Backend
-```bash
-cd backend
-python -m venv venv
-venv\Scripts\activate        # Windows
-pip install -r requirements.txt
-playwright install chromium
+**AI:** OpenRouter API (gpt-4o-mini)
 
-# Generate Fernet key (run once):
-python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
-# Paste output into .env FERNET_KEY=...
+**Monitoring:** cron-job.org
 
-uvicorn app.main:app --reload
-```
+## Live
 
-### 3. Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-API runs at http://localhost:8000  
-Frontend runs at http://localhost:3000  
-API docs at http://localhost:8000/docs
-
-## Git Branch Strategy
-```
-main
-└── dev
-    ├── feature/frontend   (Developer A)
-    └── feature/backend    (Developer B)
-```
-
-Never push directly to `main`. Open PR → `dev` → review → merge.  
-Developer B owns `docker-compose.yml`.
+- Frontend: https://postflow-1.onrender.com
+- Backend API: https://postflow-pv08.onrender.com/docs
