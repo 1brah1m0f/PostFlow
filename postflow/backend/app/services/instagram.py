@@ -61,25 +61,29 @@ def _get_client(username: str, password: str) -> Client:
 
 def _prepare_image(image_path: str) -> Path:
     """
-    Convert JFIF/unsupported formats to JPEG and ensure the image
-    is within Instagram's accepted dimensions (max 1440px on longest side).
+    Normalise any uploaded image to an RGB JPEG within Instagram's
+    accepted dimensions (max 1440px on longest side).
+    PNG/RGBA transparency is flattened to white.
     """
     path = Path(image_path)
-
-    if path.suffix.lower() in [".jfif", ".jpe", ".jpeg"]:
-        out = path.with_suffix(".jpg")
-        img = Image.open(path).convert("RGB")
-        img.save(out, "JPEG", quality=95)
-        path = out
-
-    # Resize if too large
     img = Image.open(path)
+
+    if img.mode in ("RGBA", "LA", "P"):
+        background = Image.new("RGB", img.size, (255, 255, 255))
+        if img.mode == "P":
+            img = img.convert("RGBA")
+        background.paste(img, mask=img.split()[-1] if img.mode in ("RGBA", "LA") else None)
+        img = background
+    else:
+        img = img.convert("RGB")
+
     max_side = 1440
     if max(img.size) > max_side:
         img.thumbnail((max_side, max_side), Image.LANCZOS)
-        img.save(path, "JPEG", quality=95)
 
-    return path
+    out = path.with_suffix(".jpg")
+    img.save(out, "JPEG", quality=95)
+    return out
 
 
 class InstagramVerifier:
