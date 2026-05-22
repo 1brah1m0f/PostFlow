@@ -1,0 +1,29 @@
+.button {
+  border-radius: var(--radius-input);
+  padding: 12px 24px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.primary {
+  background-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.primary:hover {
+  background-color: #414b08;
+}
+
+.secondary {
+  background-color: var(--surface);
+  color: var(--on-surface);
+  border: 1px solid var(--tertiary-container); /* #c8a77c */
+}
+
+.secondary:hover {
+  background-color: var(--surface-dim);
+}

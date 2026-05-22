@@ -1,0 +1,29 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+  width: 100%;
+}
+
+.input {
+  border: 1px solid var(--outline-variant);
+  background-color: #ffffff;
+  border-radius: var(--radius-input);
+  padding: 12px 16px;
+  color: var(--on-surface);
+  outline: none;
+  transition: border-color 0.2s ease;
+}
+
+.input:focus {
+  border: 2px solid var(--primary);
+  padding: 11px 15px; /* Offset the 2px border so it doesn't jump */
+}
+
+.inputError {
+  border-color: var(--error);
+}
+
+.errorText {
+  color: var(--error);
+}

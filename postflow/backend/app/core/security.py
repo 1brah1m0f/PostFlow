@@ -4,7 +4,7 @@ from passlib.context import CryptContext
 from cryptography.fernet import Fernet
 from app.core.config import settings
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto", bcrypt__truncate_error=False)
 fernet = Fernet(settings.FERNET_KEY.encode())
 
 

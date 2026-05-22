@@ -1,0 +1,42 @@
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: 4px 12px;
+  border-radius: var(--radius-pill);
+}
+
+.scheduled {
+  background-color: #dcea97;
+  color: #414b08;
+}
+
+.published {
+  background-color: var(--primary-container); /* #a6b366 */
+  color: #ffffff;
+}
+
+.running {
+  background-color: var(--surface-container); /* #fdecc6 */
+  color: var(--primary); /* #586420 */
+}
+
+.failed {
+  background-color: var(--error-container); /* #ffdad6 */
+  color: #93000a;
+}
+
+.spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(88, 100, 32, 0.3);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

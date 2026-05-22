@@ -1,3 +1,15 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-pf-background text-pf-brown font-sans antialiased;
+  }
+}
+
+@layer utilities {
+  .shadow-soft {
+    box-shadow: 0 10px 40px -10px rgba(89, 39, 6, 0.08);
+  }
+}

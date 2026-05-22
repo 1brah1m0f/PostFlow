@@ -1,0 +1,87 @@
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xl);
+}
+
+.layout {
+  display: flex;
+  gap: var(--spacing-xl);
+}
+
+.formSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-lg);
+  background-color: var(--surface-container);
+  padding: var(--spacing-lg);
+  border-radius: var(--radius-card);
+}
+
+.previewSection {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xs);
+}
+
+.platformSelector {
+  display: flex;
+  gap: var(--spacing-md);
+}
+
+.textarea {
+  border: 1px solid var(--outline-variant);
+  background-color: #ffffff;
+  border-radius: var(--radius-input);
+  padding: 12px 16px;
+  color: var(--on-surface);
+  outline: none;
+  transition: border-color 0.2s ease;
+  resize: vertical;
+}
+
+.textarea:focus {
+  border: 2px solid var(--primary);
+  padding: 11px 15px;
+}
+
+.uploadArea {
+  border: 2px dashed var(--outline-variant);
+  border-radius: var(--radius-input);
+  padding: var(--spacing-xl);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--surface-container-high);
+  color: var(--on-surface-variant);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.uploadArea:hover {
+  border-color: var(--primary);
+  background-color: var(--surface-dim);
+}
+
+.submitBtn {
+  margin-top: var(--spacing-md);
+}
+
+.previewCard {
+  position: sticky;
+  top: var(--spacing-xl);
+}
+
+@media (max-width: 1024px) {
+  .layout {
+    flex-direction: column;
+  }
+}

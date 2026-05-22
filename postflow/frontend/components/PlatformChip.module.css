@@ -1,0 +1,30 @@
+.chip {
+  border: 2px solid transparent;
+  border-radius: var(--radius-pill);
+  padding: 12px 32px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.instagram {
+  background-color: var(--surface-container-high); /* #f8e7c0 */
+  color: var(--secondary); /* #974715 */
+}
+
+.tiktok {
+  background-color: #f2e1bb;
+  color: var(--on-surface); /* #231b04 */
+}
+
+.chip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(89, 39, 6, 0.08);
+}
+
+.chip.active {
+  border-color: var(--primary);
+  box-shadow: 0 4px 12px rgba(89, 39, 6, 0.12);
+}

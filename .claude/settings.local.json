@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Leila\\\\PostFlow\" -Force)",
+      "Bash(Select-Object Name, PSIsContainer)",
+      "mcp__supabase__list_tables",
+      "mcp__supabase__apply_migration",
+      "mcp__supabase__execute_sql",
+      "Bash(gh repo *)",
+      "Bash(curl -s https://raw.githubusercontent.com/HenryAlbu/auto-Instagram-posting-bot/main/README.md)",
+      "Bash(curl *)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "supabase"
+  ]
+}

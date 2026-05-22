@@ -15,6 +15,7 @@ class User(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     email = Column(String(255), unique=True, nullable=False)
+    name = Column(String(255), nullable=True)
     password_hash = Column(String(255), nullable=False)
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
@@ -30,10 +31,12 @@ class InstagramAccount(Base):
     username = Column(String(255), nullable=False)
     password_encrypted = Column(Text, nullable=False)
     is_active = Column(Boolean, default=True)
+    profile_pic_url = Column(Text, nullable=True)
+    is_verified = Column(Boolean, default=False)
     created_at = Column(DateTime(timezone=True), default=utcnow)
 
     user = relationship("User", back_populates="accounts")
-    posts = relationship("Post", back_populates="instagram_account")
+    posts = relationship("Post", back_populates="instagram_account", passive_deletes=True)
 
 
 class Post(Base):
@@ -41,7 +44,7 @@ class Post(Base):
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
-    account_id = Column(UUID(as_uuid=True), ForeignKey("instagram_accounts.id"), nullable=False)
+    account_id = Column(UUID(as_uuid=True), ForeignKey("instagram_accounts.id", ondelete="SET NULL"), nullable=True)
     caption = Column(Text, nullable=False)
     image_url = Column(Text)
     scheduled_at = Column(DateTime(timezone=True), nullable=False)
