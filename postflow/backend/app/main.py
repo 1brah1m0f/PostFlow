@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 import os
 
 from app.database import Base, engine
-from app.routers import auth, posts, accounts
+from app.routers import auth, posts, accounts, ai
 from app.services.scheduler import start_scheduler
 from app.core.config import settings
 
@@ -49,6 +49,7 @@ app.mount("/uploads", StaticFiles(directory=settings.UPLOADS_DIR), name="uploads
 app.include_router(auth.router)
 app.include_router(posts.router)
 app.include_router(accounts.router)
+app.include_router(ai.router)
 
 
 @app.get("/health")

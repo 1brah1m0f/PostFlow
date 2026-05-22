@@ -11,6 +11,7 @@ class Settings(BaseSettings):
     BASE_URL: str = "http://localhost:8000"
     SUPABASE_URL: str = ""
     SUPABASE_SERVICE_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
 
     class Config:
         env_file = ".env"

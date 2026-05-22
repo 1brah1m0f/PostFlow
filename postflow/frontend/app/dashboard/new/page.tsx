@@ -64,6 +64,10 @@ function ComposePostInner() {
   const [error, setError] = useState('');
   const [dragging, setDragging] = useState(false);
   const [loadingEdit, setLoadingEdit] = useState(!!editId);
+  const [aiModalOpen, setAiModalOpen] = useState(false);
+  const [aiTopic, setAiTopic] = useState('');
+  const [aiGenerating, setAiGenerating] = useState(false);
+  const [aiError, setAiError] = useState('');
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
   const authHeader = { Authorization: `Bearer ${token}` };
@@ -125,6 +129,30 @@ function ComposePostInner() {
     }
   }
 
+  async function generateCaption() {
+    setAiGenerating(true);
+    setAiError('');
+    try {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/ai/caption`, {
+        method: 'POST',
+        headers: { ...authHeader, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ topic: aiTopic || null, image_url: uploadedUrl || null }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Generation failed');
+      }
+      const data = await res.json();
+      setCaption(data.caption);
+      setAiModalOpen(false);
+      setAiTopic('');
+    } catch (e: any) {
+      setAiError(e.message || 'Something went wrong. Try again.');
+    } finally {
+      setAiGenerating(false);
+    }
+  }
+
   function removeMedia() {
     setMediaPreview(null);
     setUploadedUrl(null);
@@ -180,6 +208,59 @@ function ComposePostInner() {
   );
 
   return (
+    <>
+    {aiModalOpen && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+        <div className="bg-white rounded-[2rem] shadow-xl w-full max-w-md p-8 space-y-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-pf-brown font-bold text-lg">
+              <Wand2 size={20} className="text-pf-green" />
+              Generate Caption with AI
+            </div>
+            <button onClick={() => { setAiModalOpen(false); setAiError(''); }} className="text-pf-brown/40 hover:text-pf-brown">
+              <X size={20} />
+            </button>
+          </div>
+
+          <p className="text-pf-brown/60 text-sm">
+            Describe your post or leave blank — AI will use your uploaded image as context.
+          </p>
+
+          <textarea
+            className="w-full bg-pf-tan/10 border border-pf-brown/10 rounded-xl px-4 py-3 text-pf-brown placeholder-pf-brown/40 outline-none focus:border-pf-green resize-none min-h-[90px] text-sm"
+            placeholder="e.g. Sunset at the beach, feeling relaxed..."
+            value={aiTopic}
+            onChange={e => setAiTopic(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) generateCaption(); }}
+          />
+
+          {aiError && <p className="text-sm text-red-500">{aiError}</p>}
+
+          <div className="flex gap-3">
+            <button
+              onClick={() => { setAiModalOpen(false); setAiError(''); }}
+              className="flex-1 py-3 bg-pf-tan/30 text-pf-brown font-semibold rounded-xl hover:bg-pf-tan/50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={generateCaption}
+              disabled={aiGenerating}
+              className="flex-1 py-3 bg-pf-green text-white font-semibold rounded-xl hover:bg-pf-green/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-60"
+            >
+              {aiGenerating ? (
+                <>
+                  <svg className="animate-spin w-4 h-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/></svg>
+                  Generating...
+                </>
+              ) : (
+                <><Wand2 size={14} /> Generate</>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
     <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8">
 
       {/* Left Column */}
@@ -311,7 +392,10 @@ function ComposePostInner() {
           </div>
           <div className="flex items-center justify-between text-sm">
             <span className="text-pf-brown/40">{caption.length} / 2200 characters</span>
-            <button className="flex items-center gap-1.5 text-pf-green font-medium hover:underline">
+            <button
+              onClick={() => setAiModalOpen(true)}
+              className="flex items-center gap-1.5 text-pf-green font-medium hover:underline"
+            >
               <Wand2 size={14} /> Generate with AI
             </button>
           </div>
@@ -428,6 +512,7 @@ function ComposePostInner() {
       </div>
 
     </div>
+    </>
   );
 }
 
