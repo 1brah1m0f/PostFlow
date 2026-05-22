@@ -62,7 +62,7 @@ class PostUpdate(BaseModel):
 
 class PostOut(BaseModel):
     id: UUID
-    account_id: UUID
+    account_id: Optional[UUID]
     caption: str
     image_url: Optional[str]
     scheduled_at: datetime
