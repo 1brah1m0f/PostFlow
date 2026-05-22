@@ -23,7 +23,8 @@ def _session_path(username: str) -> str:
 def _get_client(username: str, password: str) -> Client:
     """Return an authenticated instagrapi Client, reusing session if possible."""
     cl = Client()
-    cl.delay_range = [1, 3]  # humanise request timing
+    cl.delay_range = [1, 3]
+    cl.request_timeout = 120
 
     session_file = _session_path(username)
 
