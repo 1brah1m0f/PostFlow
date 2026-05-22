@@ -41,7 +41,7 @@ export default function Settings() {
 
   async function loadAccounts() {
     if (!token) { router.push('/login'); return; }
-    const res = await fetch('http://localhost:8000/accounts', { headers: auth });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts`, { headers: auth });
     const data = await res.json();
     setAccounts(Array.isArray(data) ? data : []);
   }
@@ -57,7 +57,7 @@ export default function Settings() {
     setAdding(true);
     setAddError('');
     try {
-      const res = await fetch('http://localhost:8000/accounts', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts`, {
         method: 'POST',
         headers: { ...auth, 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: addForm.username.replace('@', ''), password: addForm.password }),
@@ -92,7 +92,7 @@ export default function Settings() {
       };
       if (editForm.password.trim()) body.password = editForm.password;
 
-      const res = await fetch(`http://localhost:8000/accounts/${editAccount.id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts/${editAccount.id}`, {
         method: 'PUT',
         headers: { ...auth, 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -113,7 +113,7 @@ export default function Settings() {
     setUnlinking(id);
     setPageError('');
     try {
-      const res = await fetch(`http://localhost:8000/accounts/${id}`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts/${id}`, {
         method: 'DELETE',
         headers: auth,
       });
@@ -134,7 +134,7 @@ export default function Settings() {
     setVerifying(id);
     setPageError('');
     try {
-      const res = await fetch(`http://localhost:8000/accounts/${id}/verify`, {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts/${id}/verify`, {
         method: 'POST',
         headers: auth,
       });

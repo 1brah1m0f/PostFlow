@@ -71,13 +71,13 @@ function ComposePostInner() {
   useEffect(() => {
     if (!token) { router.push('/login'); return; }
 
-    fetch('http://localhost:8000/accounts', { headers: authHeader })
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts`, { headers: authHeader })
       .then(r => r.json())
       .then(data => setAccounts(Array.isArray(data) ? data : []))
       .catch(() => {});
 
     if (editId) {
-      fetch(`http://localhost:8000/posts/${editId}`, { headers: authHeader })
+      fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${editId}`, { headers: authHeader })
         .then(r => r.json())
         .then(post => {
           setCaption(post.caption || '');
@@ -111,7 +111,7 @@ function ComposePostInner() {
     try {
       const fd = new FormData();
       fd.append('file', file);
-      const res = await fetch('http://localhost:8000/posts/upload', {
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/upload`, {
         method: 'POST', headers: authHeader, body: fd,
       });
       if (!res.ok) throw new Error();
@@ -143,7 +143,7 @@ function ComposePostInner() {
     try {
       if (editId) {
         // Update existing post
-        const res = await fetch(`http://localhost:8000/posts/${editId}`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${editId}`, {
           method: 'PUT',
           headers: { ...authHeader, 'Content-Type': 'application/json' },
           body: JSON.stringify({ caption, image_url: uploadedUrl ?? null, scheduled_at, status }),
@@ -153,7 +153,7 @@ function ComposePostInner() {
         // Create new post(s)
         const results = await Promise.all(
           selectedIds.map(account_id =>
-            fetch('http://localhost:8000/posts', {
+            fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
               method: 'POST',
               headers: { ...authHeader, 'Content-Type': 'application/json' },
               body: JSON.stringify({ account_id, caption, image_url: uploadedUrl ?? null, scheduled_at, status }),

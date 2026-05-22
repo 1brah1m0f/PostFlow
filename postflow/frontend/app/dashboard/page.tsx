@@ -95,9 +95,9 @@ export default function Dashboard() {
     if (!token) { router.push('/login'); return; }
     try {
       const [userRes, postsRes, accountsRes] = await Promise.all([
-        fetch('http://localhost:8000/auth/me', { headers: auth }),
-        fetch('http://localhost:8000/posts', { headers: auth }),
-        fetch('http://localhost:8000/accounts', { headers: auth }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/me`, { headers: auth }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, { headers: auth }),
+        fetch(`${process.env.NEXT_PUBLIC_API_URL}/accounts`, { headers: auth }),
       ]);
       const [user, postsData, accountsData] = await Promise.all([
         userRes.json(), postsRes.json(), accountsRes.json(),
@@ -112,7 +112,7 @@ export default function Dashboard() {
   }
 
   async function openReports() {
-    const res = await fetch('http://localhost:8000/posts/reports/summary', { headers: auth });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/reports/summary`, { headers: auth });
     const data = await res.json();
     setReportData(data);
     setShowReports(true);
@@ -121,7 +121,7 @@ export default function Dashboard() {
   async function deletePost(id: string) {
     if (!confirm('Delete this post?')) return;
     setDeletingId(id);
-    await fetch(`http://localhost:8000/posts/${id}`, { method: 'DELETE', headers: auth });
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${id}`, { method: 'DELETE', headers: auth });
     setDeletingId(null);
     loadData();
   }
@@ -157,7 +157,7 @@ export default function Dashboard() {
     if (!quickCaption.trim() || !quickAccountId) return;
     setQuickSaving(true);
     const scheduled_at = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
-    await fetch('http://localhost:8000/posts', {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, {
       method: 'POST',
       headers: { ...auth, 'Content-Type': 'application/json' },
       body: JSON.stringify({ account_id: quickAccountId, caption: quickCaption, scheduled_at, status: 'draft' }),

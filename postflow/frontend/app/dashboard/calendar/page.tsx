@@ -54,7 +54,7 @@ export default function AllPostsPage() {
 
   async function loadPosts() {
     if (!token) { router.push('/login'); return; }
-    const res = await fetch('http://localhost:8000/posts', { headers: auth });
+    const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts`, { headers: auth });
     const data = await res.json();
     setPosts(Array.isArray(data) ? data : []);
     setLoading(false);
@@ -64,14 +64,14 @@ export default function AllPostsPage() {
 
   async function deletePost(id: string) {
     if (!confirm('Delete this post?')) return;
-    await fetch(`http://localhost:8000/posts/${id}`, { method: 'DELETE', headers: auth });
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${id}`, { method: 'DELETE', headers: auth });
     setMenuOpen(null);
     loadPosts();
   }
 
   async function retryPost(id: string) {
     setRetrying(id);
-    await fetch(`http://localhost:8000/posts/${id}`, {
+    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/posts/${id}`, {
       method: 'PUT',
       headers: { ...auth, 'Content-Type': 'application/json' },
       body: JSON.stringify({ status: 'scheduled' }),
