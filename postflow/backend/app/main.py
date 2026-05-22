@@ -13,6 +13,10 @@ from app.core.config import settings
 
 os.makedirs(settings.UPLOADS_DIR, exist_ok=True)
 
+# Comma-separated list of allowed origins, e.g. "http://localhost:3000,https://postflow.vercel.app"
+_raw_origins = os.getenv("CORS_ORIGINS", "http://localhost:3000")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -25,7 +29,7 @@ app = FastAPI(title="PostFlow API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -33,10 +37,11 @@ app.add_middleware(
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    origin = request.headers.get("origin", ALLOWED_ORIGINS[0] if ALLOWED_ORIGINS else "*")
     return JSONResponse(
         status_code=500,
         content={"detail": str(exc)},
-        headers={"Access-Control-Allow-Origin": "http://localhost:3000"},
+        headers={"Access-Control-Allow-Origin": origin},
     )
 
 app.mount("/uploads", StaticFiles(directory=settings.UPLOADS_DIR), name="uploads")

@@ -8,7 +8,10 @@
       "mcp__supabase__execute_sql",
       "Bash(gh repo *)",
       "Bash(curl -s https://raw.githubusercontent.com/HenryAlbu/auto-Instagram-posting-bot/main/README.md)",
-      "Bash(curl *)"
+      "Bash(curl *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push *)"
     ]
   },
   "enabledMcpjsonServers": [

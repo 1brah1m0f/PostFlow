@@ -11,7 +11,7 @@ scheduler = BackgroundScheduler()
 
 
 def _url_to_local_path(image_url: str | None) -> str | None:
-    """Convert http://localhost:8000/uploads/file.jpg → absolute local path."""
+    """Convert https://backend.onrender.com/uploads/file.jpg → absolute local path."""
     if not image_url:
         return None
     if "/uploads/" in image_url:
